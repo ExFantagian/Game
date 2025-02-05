@@ -19,7 +19,8 @@ clock = pygame.time.Clock()
 width = 800
 height = 500
 
-screen = pygame.display.set_mode((width, height)) 
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Cat")
 
 running = True
 background = GRAY
@@ -42,7 +43,7 @@ while running == True:
 
     screen.fill(background)
     pygame.draw.rect(screen, RED, rect, 1)
-    screen.blit(ball, rect)
+    screen.blit(cat, rect)
     pygame.display.flip()
     clock.tick(60)
 
