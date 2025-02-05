@@ -9,10 +9,11 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 128)
 
-ball = pygame.image.load("ball.gif")
-rect = ball.get_rect()
+cat = pygame.image.load("cat.gif")
+rect = cat.get_rect()
 
-speed = [1, 1]
+x, y = 100, 100
+velocity = 12
 clock = pygame.time.Clock()
 
 width = 800
@@ -33,12 +34,10 @@ while running == True:
                 background = RED
             elif event.key == pygame.K_g:
                 background = GREEN
-
-    rect = rect.move(speed)
-    if rect.left < 0 or rect.right > width:
-        speed[0] = -speed[0]
-    if rect.top < 0 or rect.bottom > height:
-        speed[1] = -speed[1]
+            if event.key == pygame.K_UP:
+                y -= velocity
+            if pygame.key.get_pressed() == K_UP:
+                y -= velocity
             
 
     screen.fill(background)
