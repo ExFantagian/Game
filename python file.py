@@ -5,18 +5,22 @@ import random
 pygame.init()
 
 # Screen dimensions
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 400
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Chrome Dino")
+pygame.display.set_caption("Feline Jumper")
 
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
+# Load Dino image
+dino_image = pygame.image.load("dino.png")
+dino_image = pygame.transform.scale(dino_image, (50, 50))
+
 # Dinosaur settings
-dino_width = 40
-dino_height = 60
+dino_width = 100
+dino_height = 10
 dino_x = 50
 dino_y = SCREEN_HEIGHT - dino_height - 10
 dino_vel_y = 0
@@ -79,9 +83,6 @@ while running:
 
     pygame.display.flip()
     clock.tick(30)
-
-pygame.quit()
-
 
 pygame.quit()
 
