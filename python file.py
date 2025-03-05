@@ -22,6 +22,8 @@ dino_y = HEIGHT - 100
 dino_vel_y = 0
 jump = False
 obstacle_x = WIDTH
+obstacle_flying_x = WIDTH
+obstacle_flying_speed = 5
 obstacle_speed = 10
 score = 0
 game_over = False
@@ -37,11 +39,11 @@ obstacle_image_dog = pygame.transform.scale(obstacle_image_dog, (50, 50))
 # Load obstacle (Sky, ??) image
 
 # Load obstacle (Ground, Water puddle) image
-#obstacle_image_Waterpuddle = pygame.image.load("Waterpuddle.jpg")
-#obstacle_image_Waterpuddle = pygame.transform.scale(obstacle_image_Waterpuddle, (50, 50))
+obstacle_image_Waterpuddle = pygame.image.load("Waterpuddle.png")
+obstacle_image_Waterpuddle = pygame.transform.scale(obstacle_image_Waterpuddle, (50, 50))
 
 # Load obstacle (Sky, Sharks) image
-obstacle_image_shark = pygame.image.load("menacingshark.jpg")
+obstacle_image_shark = pygame.image.load("Shark.jpg")
 obstacle_image_shark = pygame.transform.scale(obstacle_image_shark, (50, 50))
 
 
@@ -86,10 +88,17 @@ while running:
             obstacle_x = WIDTH
             score += 1
 
+        if score >= 5:
+            obstacle_flying_x -= obstacle_flying_speed
+            if obstacle_flying_x < -50:
+                obstacle_flying_x = WIDTH
+                score += 1
+
         # Collision detection
         dino_rect = pygame.Rect(dino_x, dino_y, 50, 50)
         obstacle_rect = pygame.Rect(obstacle_x, HEIGHT - 100, 50, 50)
-        if dino_rect.colliderect(obstacle_rect):
+        obstacle_rect_flying = pygame.Rect(obstacle_flying_x, HEIGHT - 50, 10, 10)
+        if dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_rect_flying):
             game_over = True
 
         # Draw Dino
@@ -100,7 +109,8 @@ while running:
         if score < 5:
             screen.blit(obstacle_image_dog, (obstacle_x, HEIGHT - 100))
         if score >= 5:
-            screen.blit(obstacle_image_shark, (obstacle_x, HEIGHT - 100))
+            screen.blit(obstacle_image_Waterpuddle, (obstacle_x, HEIGHT - 100))
+            screen.blit(obstacle_image_shark, (obstacle_flying_x, HEIGHT - 200))
 
         # Display score
         font = pygame.font.Font(None, 36)
