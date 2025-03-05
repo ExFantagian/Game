@@ -97,7 +97,7 @@ while running:
         # Collision detection
         dino_rect = pygame.Rect(dino_x, dino_y, 50, 50)
         obstacle_rect = pygame.Rect(obstacle_x, HEIGHT - 100, 50, 50)
-        obstacle_rect_flying = pygame.Rect(obstacle_flying_x, HEIGHT - 50, 10, 10)
+        obstacle_rect_flying = pygame.Rect(obstacle_flying_x, HEIGHT - 200, 100, 50)
         if dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_rect_flying):
             game_over = True
 
