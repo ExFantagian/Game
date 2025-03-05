@@ -41,7 +41,7 @@ obstacle_image_dog = pygame.transform.scale(obstacle_image_dog, (50, 50))
 #obstacle_image_Waterpuddle = pygame.transform.scale(obstacle_image_Waterpuddle, (50, 50))
 
 # Load obstacle (Sky, Sharks) image
-obstacle_image_shark = pygame.image.load("Shark.jpg")
+obstacle_image_shark = pygame.image.load("menacingshark.jpg")
 obstacle_image_shark = pygame.transform.scale(obstacle_image_shark, (50, 50))
 
 
