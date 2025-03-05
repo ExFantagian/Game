@@ -1,5 +1,6 @@
 import pygame
 import random
+import sys
 
 # Initialize Pygame
 pygame.init()
@@ -29,13 +30,25 @@ game_over = False
 dino_image = pygame.image.load("cat.png")
 dino_image = pygame.transform.scale(dino_image, (50, 50))
 
-# Load obstacle image
-obstacle_image = pygame.image.load("obstacle.jpg")
-obstacle_image = pygame.transform.scale(obstacle_image, (50, 50))
+# Load obstacle (Ground, dog) image
+obstacle_image_dog = pygame.image.load("obstacle.jpg")
+obstacle_image_dog = pygame.transform.scale(obstacle_image_dog, (50, 50))
+
+# Load obstacle (Sky, ??) image
+
+# Load obstacle (Ground, Water puddle) image
+#obstacle_image_Waterpuddle = pygame.image.load("Waterpuddle.jpg")
+#obstacle_image_Waterpuddle = pygame.transform.scale(obstacle_image_Waterpuddle, (50, 50))
+
+# Load obstacle (Sky, Sharks) image
+obstacle_image_shark = pygame.image.load("Shark.jpg")
+obstacle_image_shark = pygame.transform.scale(obstacle_image_shark, (50, 50))
+
 
 # Load game over image
 game_over_image = pygame.image.load("game_over.png")
 game_over_image = pygame.transform.scale(game_over_image, (WIDTH, HEIGHT))
+
 
 def display_game_over_screen(score):
     screen.blit(game_over_image, (0, 0))  # Display the game over image
@@ -51,6 +64,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+            pygame.quit()
+            sys.exit()
         if event.type == pygame.KEYDOWN:
             if (event.key == pygame.K_SPACE or event.key == pygame.K_UP) and not jump and not game_over:
                 jump = True
@@ -82,7 +97,10 @@ while running:
         screen.blit(dino_image, (dino_x, dino_y))
 
         # Draw obstacle
-        screen.blit(obstacle_image, (obstacle_x, HEIGHT - 100))
+        if score < 5:
+            screen.blit(obstacle_image_dog, (obstacle_x, HEIGHT - 100))
+        if score >= 5:
+            screen.blit(obstacle_image_shark, (obstacle_x, HEIGHT - 100))
 
         # Display score
         font = pygame.font.Font(None, 36)
