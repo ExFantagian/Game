@@ -69,6 +69,10 @@ hawk_image = pygame.transform.scale(hawk_image, (50, 50))
 game_over_image = pygame.image.load("game_over.png")
 game_over_image = pygame.transform.scale(game_over_image, (WIDTH, HEIGHT))
 
+# Load bg image
+bg_image = pygame.image.load("mariobg.png")
+bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
+
 def display_game_over_screen(score):
     screen.blit(game_over_image, (0, 0))  # Display the game over image
     font = pygame.font.Font(None, 36)
@@ -131,7 +135,7 @@ while running:
 
     # PLAYING state logic
     elif game_state == PLAYING:
-        screen.fill(WHITE)  # Clear the screen
+        screen.blit(bg_image, (0, 0))  # Clear the screen
 
         # Dino jumping logic
         if jump:
