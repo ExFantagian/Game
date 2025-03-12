@@ -23,6 +23,7 @@ game_state = TITLE
 clock = pygame.time.Clock()
 dino_x = 50
 dino_y = HEIGHT - 100
+gravity = 2
 dino_vel_y = 0
 jump = False
 duck = False
@@ -35,7 +36,12 @@ hawk_y = HEIGHT - 150
 hawk_speed = 10
 score = 0
 spawn_hawk = False
-game_over = False  # Initialize game_over variable
+game_over = False
+HAWK_MIN_HEIGHT = HEIGHT - (175 + min(score, 100))  # Gradually raises the spawn floor
+HAWK_MAX_HEIGHT = HEIGHT - (150 + min(score, 100))
+SAFE_DISTANCE = 200  # Distance to ensure hawk does not overlap ground obstacles
+
+
 
 # Load Dino images
 dino_image = pygame.image.load("cat.png")
@@ -80,72 +86,74 @@ def display_title_screen():
 # Game loop
 running = True
 while running:
-    for event in pygame.event.get():
+    for event in pygame.event.get():  # Single event loop
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
             sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if game_state == TITLE:
-                if event.key == pygame.K_s:
-                    game_state = PLAYING
-            if game_state == PLAYING:
+
+        # TITLE state events
+        if game_state == TITLE:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                game_state = PLAYING
+
+        # PLAYING state events
+        elif game_state == PLAYING:
+            if event.type == pygame.KEYDOWN:
                 if (event.key == pygame.K_SPACE or event.key == pygame.K_UP or event.key == pygame.K_w or event.key == pygame.K_j) and not jump:
                     jump = True
-                    dino_vel_y = -15
+                    dino_vel_y = -12
                 if (event.key == pygame.K_DOWN or event.key == pygame.K_d or event.key == pygame.K_s) and not jump:
                     duck = True
-            if game_state == GAME_OVER:
-                if event.key == pygame.K_r:
-                    game_state = TITLE
-                    game_over = False
-                    score = 0
-                    obstacle_x = WIDTH
-                    obstacle_flying_x = WIDTH
-                    hawk_x = WIDTH
-                    dino_y = HEIGHT - 100
+            if event.type == pygame.KEYUP:
+                if event.key in [pygame.K_DOWN, pygame.K_d, pygame.K_s]:
+                    duck = False
 
-        if event.type == pygame.KEYUP:
-            if game_state == PLAYING and (event.key == pygame.K_DOWN or event.key == pygame.K_d or event.key == pygame.K_s):
-                duck = False
-
-    if game_state == TITLE:
-        display_title_screen()
-
-    elif game_state == PLAYING:
-        if not game_over:
-            # Dino jumping logic
-            if jump:
-                dino_y += dino_vel_y
-                dino_vel_y += 1
-                if dino_y >= HEIGHT - 100:
-                    dino_y = HEIGHT - 100
-                    jump = False
-
-            # Move obstacle
-            obstacle_x -= obstacle_speed
-            if obstacle_x < -50:
+        # GAME_OVER state events
+        elif game_state == GAME_OVER:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                game_state = TITLE
+                game_over = False
+                score = 0
                 obstacle_x = WIDTH
-                score += 1
-
-            # Randomly decide whether to spawn the hawk
-            if score >= 5 and not spawn_hawk and random.choice([True, False]):
-                spawn_hawk = True
+                obstacle_flying_x = WIDTH
                 hawk_x = WIDTH
-                hawk_y = random.randint(HEIGHT - 200, HEIGHT - 100)
-            if spawn_hawk:
-                hawk_x -= hawk_speed
-                if hawk_x < -50:
-                    spawn_hawk = False
+                dino_y = HEIGHT - 100
 
-            # Move flying obstacles
-            if score >= 5:
-                obstacle_flying_x -= obstacle_flying_speed
-                if obstacle_flying_x < -50:
-                    obstacle_flying_x = WIDTH
-                    score += 1
+    # TITLE state logic
+    if game_state == TITLE:
+        screen.fill(WHITE)  # Clear the screen
+        display_title_screen()  # Draw title screen content
 
-            # Collision detection
+    # PLAYING state logic
+    elif game_state == PLAYING:
+        screen.fill(WHITE)  # Clear the screen
+
+        # Dino jumping logic
+        if jump:
+            dino_y += dino_vel_y
+            dino_vel_y += 1
+            if dino_y >= HEIGHT - 100:
+                dino_y = HEIGHT - 100
+                jump = False
+
+        # Move obstacle
+        obstacle_x -= obstacle_speed
+        if obstacle_x < -50:
+            obstacle_x = WIDTH
+            score += 1
+
+        # Randomly decide whether to spawn the hawk
+        if score >= 5 and not spawn_hawk and random.choice([True, False]):
+            spawn_hawk = True
+            hawk_x = WIDTH
+            hawk_y = random.randint(HEIGHT - 200, HEIGHT - 100)
+        if spawn_hawk:
+            hawk_x -= hawk_speed
+            if hawk_x < -50:
+                spawn_hawk = False
+
+        # Collision detection
             dino_rect = pygame.Rect(dino_x, dino_y, 50, 50 if not duck else 25)
             obstacle_rect = pygame.Rect(obstacle_x, HEIGHT - 100, 50, 50)
             obstacle_rect_flying = pygame.Rect(obstacle_flying_x, HEIGHT - 200, 100, 50)
@@ -154,40 +162,36 @@ while running:
                 game_over = True
                 game_state = GAME_OVER
 
-            # Draw Dino
-            screen.fill(WHITE)
-            if jump:
-                screen.blit(dino_jump_image, (dino_x, dino_y))
-            elif duck:
-                screen.blit(dino_duck_image, (dino_x, HEIGHT - 75))
-            else:
-                screen.blit(dino_image, (dino_x, dino_y))
 
-            # Draw obstacles
-            if score < 5:
-                screen.blit(obstacle_image_dog, (obstacle_x, HEIGHT - 100))
-            else:
-                screen.blit(obstacle_image_Waterpuddle, (obstacle_x, HEIGHT - 100))
-                screen.blit(obstacle_image_shark, (obstacle_flying_x, HEIGHT - 200))
-            if spawn_hawk:
-                screen.blit(hawk_image, (hawk_x, hawk_y))
+        # Draw Dino and obstacles
+        if jump:
+            screen.blit(dino_jump_image, (dino_x, dino_y))
+        elif duck:
+            screen.blit(dino_duck_image, (dino_x, HEIGHT - 75))
+        else:
+            screen.blit(dino_image, (dino_x, dino_y))
 
-            # Display score
-            font = pygame.font.Font(None, 36)
-            score_text = font.render("Score: " + str(score), True, BLACK)
-            screen.blit(score_text, (10, 10))
+        if score < 5:
+            screen.blit(obstacle_image_dog, (obstacle_x, HEIGHT - 100))
+        else:
+            screen.blit(obstacle_image_Waterpuddle, (obstacle_x, HEIGHT - 100))
+            screen.blit(obstacle_image_shark, (obstacle_flying_x, HEIGHT - 200))
 
-            pygame.display.flip()
-            clock.tick(30)
+        if spawn_hawk:
+            screen.blit(hawk_image, (hawk_x, hawk_y))
 
+        # Display the score
+        font = pygame.font.Font(None, 36)
+        score_text = font.render("Score: " + str(score), True, BLACK)
+        screen.blit(score_text, (10, 10))
+
+    # GAME_OVER state logic
     elif game_state == GAME_OVER:
-        display_game_over_screen(score)
-        game_state = TITLE
-        game_over = False
-        score = 0
-        obstacle_x = WIDTH
-        obstacle_flying_x = WIDTH
-        hawk_x = WIDTH
-        dino_y = HEIGHT - 100
+        screen.fill(WHITE)  # Clear the screen
+        display_game_over_screen(score)  # Draw the game over screen
 
+    # Flip display
+    pygame.display.flip()
+    clock.tick(30)
 pygame.quit()
+
