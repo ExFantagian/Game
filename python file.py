@@ -31,8 +31,6 @@ dino_vel_y = 0
 jump = False
 duck = False
 obstacle_x = WIDTH
-obstacle_flying_x = WIDTH
-obstacle_flying_speed = 5
 obstacle_speed = 10
 hawk_x = WIDTH
 hawk_y = HEIGHT - 150
@@ -57,6 +55,7 @@ dino_duck_image = pygame.transform.scale(dino_duck_image, (50, 25))
 # Load obstacle images
 obstacle_image_dog = pygame.image.load("obstacle.jpg")
 obstacle_image_dog = pygame.transform.scale(obstacle_image_dog, (50, 50))
+
 obstacle_image_Waterpuddle = pygame.image.load("Waterpuddle.png")
 obstacle_image_Waterpuddle = pygame.transform.scale(obstacle_image_Waterpuddle, (50, 50))
 obstacle_image_shark = pygame.image.load("shark.png")
@@ -148,10 +147,16 @@ while running:
             score += 1
 
         # Randomly decide whether to spawn the hawk
+        if abs(hawk_x - obstacle_x) < SAFE_DISTANCE:
+                hawk_x += SAFE_DISTANCE  # Adjust the hawk's position
         if score >= 5 and not spawn_hawk and random.choice([True, False]):
             spawn_hawk = True
             hawk_x = WIDTH
-            hawk_y = random.randint(HEIGHT - 360, HEIGHT - 180) or random.randint(HEIGHT - 130, HEIGHT - -10) 
+            if random.choice([True, False]): 
+                hawk_y = random.randint(HEIGHT - 360, HEIGHT - 180)
+            else:
+                hawk_y = random.randint(HEIGHT - 130, HEIGHT - 50)
+        
         if spawn_hawk:
             hawk_x -= hawk_speed
             if hawk_x < -50:
@@ -160,9 +165,11 @@ while running:
         # Collision detection
             dino_rect = pygame.Rect(dino_x, dino_y, 50, 50 if not duck else 25)
             obstacle_rect = pygame.Rect(obstacle_x, HEIGHT - 100, 50, 50)
-            obstacle_rect_flying = pygame.Rect(obstacle_flying_x, HEIGHT - 200, 100, 50)
             hawk_rect = pygame.Rect(hawk_x, hawk_y, 50, 50)
-            if dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_rect_flying) or (spawn_hawk and dino_rect.colliderect(hawk_rect)):
+            pygame.draw.rect(screen, (255, 0, 0), dino_rect, 2)  # Red for Dino
+            pygame.draw.rect(screen, (0, 0, 255), obstacle_rect, 2)  # Blue for ground obstacle
+            pygame.draw.rect(screen, (255, 255, 0), hawk_rect, 2)  # Yellow for hawk
+            if dino_rect.colliderect(obstacle_rect) or (spawn_hawk and dino_rect.colliderect(hawk_rect)):
                 game_over = True
                 game_state = GAME_OVER
 
