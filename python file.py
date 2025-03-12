@@ -32,6 +32,8 @@ jump = False
 duck = False
 obstacle_x = WIDTH
 obstacle_speed = 10
+obstacle_flying_x = WIDTH
+obstacle_flying_speed = 5
 hawk_x = WIDTH
 hawk_y = HEIGHT - 150
 hawk_speed = 10
@@ -164,11 +166,12 @@ while running:
         # Collision detection
             dino_rect = pygame.Rect(dino_x, dino_y, 50, 50 if not duck else 25)
             obstacle_rect = pygame.Rect(obstacle_x, HEIGHT - 100, 50, 50)
+            obstacle_rect_flying = pygame.Rect(obstacle_flying_x, HEIGHT - 200, 100, 50)
             hawk_rect = pygame.Rect(hawk_x, hawk_y, 50, 50)
             pygame.draw.rect(screen, (255, 0, 0), dino_rect, 2)  # Red for Dino
             pygame.draw.rect(screen, (0, 0, 255), obstacle_rect, 2)  # Blue for ground obstacle
             pygame.draw.rect(screen, (255, 255, 0), hawk_rect, 2)  # Yellow for hawk
-            if dino_rect.colliderect(obstacle_rect) or (spawn_hawk and dino_rect.colliderect(hawk_rect)):
+            if dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_rect_flying) or (spawn_hawk and dino_rect.colliderect(hawk_rect)):
                 game_over = True
                 game_state = GAME_OVER
 
