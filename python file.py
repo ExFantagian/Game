@@ -4,11 +4,14 @@ import sys
 
 # Initialize Pygame
 pygame.init()
+pygame.mixer.quit()
+pygame.mixer.init()
 
 # Screen dimensions
 WIDTH, HEIGHT = 800, 400
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Feline Jumper")
+sound = pygame.mixer.Sound("meow.wav")
 
 # Colors
 WHITE = (255, 255, 255)
@@ -103,6 +106,7 @@ while running:
                 if (event.key == pygame.K_SPACE or event.key == pygame.K_UP or event.key == pygame.K_w or event.key == pygame.K_j) and not jump:
                     jump = True
                     dino_vel_y = -12
+                    sound.play()
                 if (event.key == pygame.K_DOWN or event.key == pygame.K_d or event.key == pygame.K_s) and not jump:
                     duck = True
             if event.type == pygame.KEYUP:
@@ -147,7 +151,7 @@ while running:
         if score >= 5 and not spawn_hawk and random.choice([True, False]):
             spawn_hawk = True
             hawk_x = WIDTH
-            hawk_y = random.randint(HEIGHT - 200, HEIGHT - 100)
+            hawk_y = random.randint(HEIGHT - 360, HEIGHT - 180) or random.randint(HEIGHT - 130, HEIGHT - -10) 
         if spawn_hawk:
             hawk_x -= hawk_speed
             if hawk_x < -50:
@@ -194,4 +198,3 @@ while running:
     pygame.display.flip()
     clock.tick(30)
 pygame.quit()
-
