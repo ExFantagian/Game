@@ -53,7 +53,7 @@ dino_duck_image = pygame.image.load("cat_jump.png")  # Image for dino when it du
 dino_duck_image = pygame.transform.scale(dino_duck_image, (50, 25))
 
 # Load obstacle images
-obstacle_image_dog = pygame.image.load("obstacle.jpg")
+obstacle_image_dog = pygame.image.load("obstacle.png")
 obstacle_image_dog = pygame.transform.scale(obstacle_image_dog, (50, 50))
 
 obstacle_image_Waterpuddle = pygame.image.load("Waterpuddle.png")
