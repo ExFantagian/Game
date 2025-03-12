@@ -119,7 +119,6 @@ while running:
                 game_over = False
                 score = 0
                 obstacle_x = WIDTH
-                obstacle_flying_x = WIDTH
                 hawk_x = WIDTH
                 dino_y = HEIGHT - 100
 
