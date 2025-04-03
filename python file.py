@@ -31,6 +31,7 @@ gravity = 2
 dino_vel_y = 0
 jump = False
 duck = False
+attacking = False
 obstacle_x = WIDTH
 obstacle_speed = 10
 obstacle_flying_x = WIDTH
@@ -47,23 +48,6 @@ HAWK_MAX_HEIGHT = HEIGHT - 150
 SAFE_DISTANCE = 200  # Distance to ensure hawk does not overlap ground obstacles
 SCORE_FILE = "scores.json"
 
-# Functions to manage scores
-def load_score():
-    if os.path.exists(SCORE_FILE):
-        try:
-            with open(SCORE_FILE, "r") as file:
-                return json.load(file)
-        except json.JSONDecodeError:
-            return []  # Handle corrupted score file
-    return []
-
-def save_score(new_score):
-    scores = load_score()
-    scores.append(new_score)
-    scores = sorted(scores, reverse=True)[:5]  # Keep top 5
-    with open(SCORE_FILE, "w") as file:
-        json.dump(scores, file)
-
 # Load images
 StartScreen = pygame.image.load("StartScreen.png")
 StartScreen = pygame.transform.scale(StartScreen, (WIDTH, HEIGHT))
@@ -74,9 +58,11 @@ dino_jump_image = pygame.transform.scale(dino_jump_image, (50, 50))
 dino_duck_image = pygame.image.load("cat_jump.png")
 dino_duck_image = pygame.transform.scale(dino_duck_image, (50, 25))
 dino_night_image = pygame.image.load("AngryCat.png")
-dino_night_jump_image = pygame.image.load("AngryCat.png")
-dino_night_duck_image = pygame.image.load("AngryCat.png")
-
+dino_night_image = pygame.transform.scale(pygame.image.load("AngryCat.png"), (50, 50))
+dino_night_jump_image = pygame.image.load("angry_jumpingcat.png")
+dino_night_jump_image = pygame.transform.scale(pygame.image.load("angry_jumpingcat.png"), (50, 50))
+dino_night_duck_image = pygame.image.load("angry_jumpingcat.png")
+dino_night_duck_image = pygame.transform.scale(pygame.image.load("angry_jumpingcat.png"), (50, 25))
 obstacle_image_dog = pygame.image.load("obstacle.png")
 obstacle_image_dog = pygame.transform.scale(obstacle_image_dog, (50, 50))
 obstacle_image_Waterpuddle = pygame.image.load("Waterpuddle.png")
@@ -85,15 +71,32 @@ obstacle_image_shark = pygame.image.load("shark.png")
 obstacle_image_shark = pygame.transform.scale(obstacle_image_shark, (50, 50))
 hawk_image = pygame.image.load("hawk.png")
 hawk_image = pygame.transform.scale(hawk_image, (50, 50))
-
 game_over_image = pygame.image.load("game_over.png")
 game_over_image = pygame.transform.scale(game_over_image, (WIDTH, HEIGHT))
 bg_day = pygame.image.load("mariobg.png")
 bg_night = pygame.image.load("nightmariobg.png")
 bg_forest_day = pygame.image.load("forest.jpg")
 bg_forest_night = pygame.image.load("forest.jpg")
+bg_day = pygame.transform.scale(pygame.image.load("mariobg.png"), (WIDTH, HEIGHT))
+bg_night = pygame.transform.scale(pygame.image.load("nightmariobg.png"), (WIDTH, HEIGHT))
+bg_forest_day = pygame.transform.scale(pygame.image.load("forest.jpg"), (WIDTH, HEIGHT))
+bg_forest_night = pygame.transform.scale(pygame.image.load("forest.jpg"), (WIDTH, HEIGHT))
 
-# Display functions
+def load_score():
+    if os.path.exists(SCORE_FILE):
+        try:
+            with open(SCORE_FILE, "r") as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            return []  # Handle corrupted score file
+
+def save_score(new_score):
+    scores = load_score()
+    scores.append(new_score)
+    scores = sorted(scores, reverse=True)[:5]  # Keep top 5
+    with open(SCORE_FILE, "w") as file:
+        json.dump(scores, file)
+
 def display_game_over_screen(score):
     screen.blit(game_over_image, (0, 0))
     font = pygame.font.Font(None, 36)
@@ -108,10 +111,23 @@ def display_title_screen():
     high_score_text = font.render("Press H for High Scores", True, BLACK)
     screen.blit(high_score_text, (WIDTH // 2 - high_score_text.get_width() // 2, HEIGHT - 50))
 
+def display_high_scores():
+    screen.fill(WHITE)
+    font = pygame.font.Font(None, 36)
+    scores = load_score()
+    y_offset = 50
+    for index, s in enumerate(scores):
+        score_text = font.render(f"{index + 1}. {s}", True, BLACK)
+        screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, y_offset))
+        y_offset += 40
+
+    return_text = font.render("Press T to Return to Title", True, BLACK)
+    screen.blit(return_text, (WIDTH // 2 - return_text.get_width() // 2, HEIGHT - 50))
+
 # Game loop
 running = True
 while running:
-    screen.fill(WHITE)  # Clear the screen at the start of each frame
+    screen.fill(WHITE)  
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -123,6 +139,8 @@ while running:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     game_state = PLAYING
+                elif event.key == pygame.K_h:
+                    game_state = HIGH_SCORES
 
         # Game state: PLAYING
         elif game_state == PLAYING:
@@ -134,33 +152,54 @@ while running:
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     duck = True
                 elif event.key == pygame.K_k and (150 <= score < 300 or 450 <= score < 600 or 750 <= score < 900):
-                    # Kill obstacles only at night
-                    if abs(dino_x - obstacle_x) < 50:
-                        obstacle_x = WIDTH
-                    if abs(dino_x - obstacle_flying_x) < 50:
-                        obstacle_flying_x = WIDTH
-                    if abs(dino_x - hawk_x) < 50:
-                        hawk_x = WIDTH
+                    attacking = True
+                    attack_timer = 20
+                    current_dino = dino_night_jump_image
+                    if dino_rect.colliderect(obstacle_rect):
+                        obstacle_x = WIDTH + 500
+                        score += 100
+                    if dino_rect.colliderect(obstacle_flying_rect):
+                        obstacle_flying_x = WIDTH + 500
+                        score += 100
+                    if dino_rect.colliderect(hawk_rect):
+                        hawk_x = WIDTH + 500
+                        score += 100
+                        
+
             if event.type == pygame.KEYUP:
                 if event.key in [pygame.K_DOWN, pygame.K_s]:
                     duck = False
 
-        # Game state: GAME_OVER
+            
+
         elif game_state == GAME_OVER:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 game_state = TITLE
-                game_over = False
                 score = 0
+                dino_x, dino_y = 50, HEIGHT - 100
+                dino_vel_y = 0
+                jump = False
+                duck = False
+                game_over = False
                 obstacle_x = WIDTH
+                obstacle_flying_x = WIDTH
                 hawk_x = WIDTH
-                dino_y = HEIGHT - 100
+                spawn_hawk = False
+                spawn_shark = False
+
+        elif game_state == HIGH_SCORES:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_t:
+                game_state = TITLE
 
     # Handle game states
     if game_state == TITLE:
         display_title_screen()
+    elif game_state == HIGH_SCORES:
+        screen.fill(WHITE)  
+        display_high_scores()  
+
 
     elif game_state == PLAYING:
-        # Update background based on score
         if score < 150:
             screen.blit(bg_day, (0, 0))
         elif score < 300:
@@ -186,7 +225,8 @@ while running:
 
         # Update dino image based on score
         if 150 <= score < 300 or 450 <= score < 600 or 750 <= score < 900:  # Night conditions
-            current_dino = dino_night_image
+            if not attacking:
+                current_dino = dino_night_image
             current_jump = dino_night_jump_image
             current_duck = dino_night_duck_image
         else:
@@ -200,6 +240,14 @@ while running:
             if dino_y >= HEIGHT - 100:
                 dino_y = HEIGHT - 100
                 jump = False
+
+        
+        if attacking:
+            attack_timer -= 1
+            if attack_timer <= 0:  #reset
+                attacking = False
+                current_dino = dino_night_image  # Restore default image
+                
 
         # Move ground and flying obstacles
         obstacle_x -= obstacle_speed
@@ -234,7 +282,8 @@ while running:
         pygame.draw.rect(screen, (255, 255, 0), hawk_rect, 2)  # Yellow for hawk
 
         # Collision Logic
-        if dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or dino_rect.colliderect(hawk_rect):
+        if not attacking and dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or dino_rect.colliderect(hawk_rect):
+            save_score(score)
             game_state = GAME_OVER
 
         # Draw Dino and obstacles
@@ -251,11 +300,10 @@ while running:
         if score >= 300 and spawn_hawk:  # Hawk spawns at score 300
             screen.blit(hawk_image, (hawk_x, hawk_y))
 
-        # Scoring system
-        score += 1  # Score increases continuously
         font = pygame.font.Font(None, 36)
-        score_text = font.render(f"Score: {score}", True, BLACK)
+        score_text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(score_text, (10, 10))
+        score += 1
 
     elif game_state == GAME_OVER:
         display_game_over_screen(score)
@@ -264,4 +312,5 @@ while running:
     clock.tick(30)
 
 pygame.quit()
+
 
