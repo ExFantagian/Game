@@ -49,7 +49,6 @@ hitsound = pygame.mixer.Sound("angrycat_audio.mp3")
 gameover_sound = pygame.mixer.Sound("CatSadSound.wav")
 pygame.mixer.music.load("daysound.mp3")
 pygame.mixer.music.play(-1)
-nightsound = pygame.mixer.Sound("nightsound.mp3")
 current_music = "day"
 
 # Load images
@@ -236,12 +235,13 @@ while running:
 
         #Music
         if score in [150, 450, 750] and current_music == "day":
-            pygame.mixer.music.fadeout(2000)
-            nightsound.play(-1)
+            pygame.mixer.music.fadeout(2000)  
+            pygame.mixer.music.load("nightsound.mp3") 
+            pygame.mixer.music.play(-1)  
             current_music = "night"
 
         if score in [300, 600, 900] and current_music == "night":
-            nightsound.stop()
+            pygame.mixer.music.fadeout(2000)
             pygame.mixer.music.load("daysound.mp3")
             pygame.mixer.music.play(-1)
             current_music = "day"
@@ -271,18 +271,18 @@ while running:
                 attacking = False
                 current_dino = dino_night_image  # Restore default image
 
-                if dino_rect.colliderect(obstacle_rect):
-                        obstacle_x = WIDTH + 500
-                        score += 100
-                        hitsound.play()
-                    if dino_rect.colliderect(obstacle_flying_rect):
-                        obstacle_flying_x = WIDTH + 500
-                        score += 100
-                        hitsound.play()
-                    if dino_rect.colliderect(hawk_rect):
-                        hawk_x = WIDTH + 500
-                        score += 100
-                        hitsound.play()
+            if dino_rect.colliderect(obstacle_rect):
+                obstacle_x = WIDTH + 500
+                score += 100
+                hitsound.play()
+            if dino_rect.colliderect(obstacle_flying_rect):
+                obstacle_flying_x = WIDTH + 500
+                score += 100
+                hitsound.play()
+            if dino_rect.colliderect(hawk_rect):
+                hawk_x = WIDTH + 500
+                score += 100
+                hitsound.play()
                 
 
         # Move ground and flying obstacles
@@ -319,9 +319,10 @@ while running:
 
         # Collision Logic
         if not attacking and (dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or (dino_rect.colliderect(hawk_rect) and not duck)):
+            pygame.mixer.music.stop()
+            gameover_sound.play()
             save_score(score)
-            game_state = GAME_OVER
-            gameover_sound.play() 
+            game_state = GAME_OVER 
 
         # Draw Dino and obstacles
         if jump:
