@@ -6,14 +6,12 @@ import json
 
 # Initialize Pygame
 pygame.init()
-pygame.mixer.quit()
 pygame.mixer.init()
 
-# Screen dimensions
+# Screen
 WIDTH, HEIGHT = 800, 400
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Feline Jumper")
-sound = pygame.mixer.Sound("meow.wav")
 
 # Colors
 WHITE = (255, 255, 255)
@@ -35,18 +33,24 @@ attacking = False
 obstacle_x = WIDTH
 obstacle_speed = 10
 obstacle_flying_x = WIDTH
-obstacle_flying_speed = 5
+obstacle_flying_speed = 10
 hawk_x = WIDTH
-hawk_y = HEIGHT - 150
+hawk_y = HEIGHT - 125
 hawk_speed = 10
 score = 0
 spawn_hawk = False
 spawn_shark = False
 game_over = False
-HAWK_MIN_HEIGHT = HEIGHT - 175
-HAWK_MAX_HEIGHT = HEIGHT - 150
-SAFE_DISTANCE = 200  # Distance to ensure hawk does not overlap ground obstacles
+HAWK_MIN_HEIGHT = HEIGHT - 125
+HAWK_MAX_HEIGHT = HEIGHT - 100
 SCORE_FILE = "scores.json"
+jumpsound = pygame.mixer.Sound("meow.wav")
+hitsound = pygame.mixer.Sound("angrycat_audio.mp3")
+gameover_sound = pygame.mixer.Sound("CatSadSound.wav")
+pygame.mixer.music.load("daysound.mp3")
+pygame.mixer.music.play(-1)
+nightsound = pygame.mixer.Sound("nightsound.mp3")
+current_music = "day"
 
 # Load images
 StartScreen = pygame.image.load("StartScreen.png")
@@ -76,11 +80,9 @@ game_over_image = pygame.transform.scale(game_over_image, (WIDTH, HEIGHT))
 bg_day = pygame.image.load("mariobg.png")
 bg_night = pygame.image.load("nightmariobg.png")
 bg_forest_day = pygame.image.load("forest.jpg")
-bg_forest_night = pygame.image.load("forest.jpg")
+bg_forest_night = pygame.image.load("forest_dark.jpg")
 bg_day = pygame.transform.scale(pygame.image.load("mariobg.png"), (WIDTH, HEIGHT))
 bg_night = pygame.transform.scale(pygame.image.load("nightmariobg.png"), (WIDTH, HEIGHT))
-bg_forest_day = pygame.transform.scale(pygame.image.load("forest.jpg"), (WIDTH, HEIGHT))
-bg_forest_night = pygame.transform.scale(pygame.image.load("forest.jpg"), (WIDTH, HEIGHT))
 
 def load_score():
     if os.path.exists(SCORE_FILE):
@@ -88,7 +90,7 @@ def load_score():
             with open(SCORE_FILE, "r") as file:
                 return json.load(file)
         except json.JSONDecodeError:
-            return []  # Handle corrupted score file
+            return []
 
 def save_score(new_score):
     scores = load_score()
@@ -112,7 +114,7 @@ def display_title_screen():
     screen.blit(high_score_text, (WIDTH // 2 - high_score_text.get_width() // 2, HEIGHT - 50))
 
 def display_high_scores():
-    screen.fill(WHITE)
+    screen.blit(StartScreen, (0, 0))
     font = pygame.font.Font(None, 36)
     scores = load_score()
     y_offset = 50
@@ -148,24 +150,13 @@ while running:
                 if event.key in [pygame.K_SPACE, pygame.K_UP, pygame.K_w] and not jump:
                     jump = True
                     dino_vel_y = -20
-                    sound.play()
+                    jumpsound.play()
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     duck = True
                 elif event.key == pygame.K_k and (150 <= score < 300 or 450 <= score < 600 or 750 <= score < 900):
                     attacking = True
                     attack_timer = 20
                     current_dino = dino_night_jump_image
-                    if dino_rect.colliderect(obstacle_rect):
-                        obstacle_x = WIDTH + 500
-                        score += 100
-                    if dino_rect.colliderect(obstacle_flying_rect):
-                        obstacle_flying_x = WIDTH + 500
-                        score += 100
-                    if dino_rect.colliderect(hawk_rect):
-                        hawk_x = WIDTH + 500
-                        score += 100
-                        
-
             if event.type == pygame.KEYUP:
                 if event.key in [pygame.K_DOWN, pygame.K_s]:
                     duck = False
@@ -173,6 +164,7 @@ while running:
             
 
         elif game_state == GAME_OVER:
+            pygame.mixer.music.fadeout(3000)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 game_state = TITLE
                 score = 0
@@ -211,24 +203,55 @@ while running:
                 screen.blit(press_k_text, (WIDTH // 2 - press_k_text.get_width() // 2, 50))
         elif score < 450:
             screen.blit(bg_forest_day, (0, 0))
-        elif score < 600:
+        elif score < 600:  # Forest Night
             screen.blit(bg_forest_night, (0, 0))
-            # Display "Press K" again when forest turns night
-            if 450 <= score <= 480:
-                font = pygame.font.Font(None, 48)
-                press_k_text = font.render("Press K to attack!", True, (255, 0, 0))
-                screen.blit(press_k_text, (WIDTH // 2 - press_k_text.get_width() // 2, 50))
-        elif score < 750:
-            screen.blit(bg_forest_day, (0, 0))
-        elif score < 900:
-            screen.blit(bg_forest_night, (0, 0))
+            if not spawn_hawk and not spawn_shark:
+                if random.choice([True, False]):  # Mutually exclusive choice
+                    spawn_hawk = True
+                    hawk_x = WIDTH
+                    hawk_y = random.randint(HAWK_MIN_HEIGHT, HAWK_MAX_HEIGHT)
+                else:
+                    obstacle_x = WIDTH  # Spawn ground obstacle instead
+
+        elif score >= 600:  # Beach area
+            if not spawn_hawk and not spawn_shark:
+                if random.choice([True, False]):  # Mutually exclusive choice
+                    spawn_shark = True
+                    obstacle_flying_x = WIDTH
+                    obstacle_flying_y = HEIGHT - 200  # Adjust for water level
+                else:
+                    obstacle_x = WIDTH  # Spawn ground obstacle instead
+
+        elif score < 750:  # Beach Day
+            screen.fill((200, 200, 200))  # Light gray sky
+            pygame.draw.rect(screen, (100, 100, 255), (0, HEIGHT // 2, WIDTH, HEIGHT // 2))  # Water
+            pygame.draw.rect(screen, WHITE, (0, HEIGHT - 50, WIDTH, 50))  # Sand
+
+        elif score < 900:  # Beach Night
+            screen.fill((50, 50, 50))  # Dark sky
+            pygame.draw.rect(screen, (50, 50, 150), (0, HEIGHT // 2, WIDTH, HEIGHT // 2))  # Water
+            pygame.draw.rect(screen, (150, 150, 150), (0, HEIGHT - 50, WIDTH, 50))  # Darker sand
+
+
+
+        #Music
+        if score in [150, 450, 750] and current_music == "day":
+            pygame.mixer.music.fadeout(2000)
+            nightsound.play(-1)
+            current_music = "night"
+
+        if score in [300, 600, 900] and current_music == "night":
+            nightsound.stop()
+            pygame.mixer.music.load("daysound.mp3")
+            pygame.mixer.music.play(-1)
+            current_music = "day"
 
         # Update dino image based on score
         if 150 <= score < 300 or 450 <= score < 600 or 750 <= score < 900:  # Night conditions
             if not attacking:
                 current_dino = dino_night_image
-            current_jump = dino_night_jump_image
-            current_duck = dino_night_duck_image
+                current_jump = dino_night_jump_image
+                current_duck = dino_night_duck_image
         else:
             current_dino = dino_image
             current_jump = dino_jump_image
@@ -247,6 +270,19 @@ while running:
             if attack_timer <= 0:  #reset
                 attacking = False
                 current_dino = dino_night_image  # Restore default image
+
+                if dino_rect.colliderect(obstacle_rect):
+                        obstacle_x = WIDTH + 500
+                        score += 100
+                        hitsound.play()
+                    if dino_rect.colliderect(obstacle_flying_rect):
+                        obstacle_flying_x = WIDTH + 500
+                        score += 100
+                        hitsound.play()
+                    if dino_rect.colliderect(hawk_rect):
+                        hawk_x = WIDTH + 500
+                        score += 100
+                        hitsound.play()
                 
 
         # Move ground and flying obstacles
@@ -282,9 +318,10 @@ while running:
         pygame.draw.rect(screen, (255, 255, 0), hawk_rect, 2)  # Yellow for hawk
 
         # Collision Logic
-        if not attacking and dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or dino_rect.colliderect(hawk_rect):
+        if not attacking and (dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or (dino_rect.colliderect(hawk_rect) and not duck)):
             save_score(score)
             game_state = GAME_OVER
+            gameover_sound.play() 
 
         # Draw Dino and obstacles
         if jump:
@@ -305,6 +342,7 @@ while running:
         screen.blit(score_text, (10, 10))
         score += 1
 
+
     elif game_state == GAME_OVER:
         display_game_over_screen(score)
 
@@ -312,5 +350,3 @@ while running:
     clock.tick(30)
 
 pygame.quit()
-
-
