@@ -61,9 +61,9 @@ dino_jump_image = pygame.transform.scale(dino_jump_image, (50, 50))
 dino_duck_image = pygame.image.load("cat_jump.png")
 dino_duck_image = pygame.transform.scale(dino_duck_image, (50, 25))
 dino_night_image = pygame.image.load("AngryCat.png")
-dino_night_image = pygame.transform.scale(pygame.image.load("AngryCat.png"), (50, 50))
+dino_night_image = pygame.transform.scale(dino_night_image, (50, 50))
 dino_night_jump_image = pygame.image.load("angry_jumpingcat.png")
-dino_night_jump_image = pygame.transform.scale(pygame.image.load("angry_jumpingcat.png"), (50, 50))
+dino_night_jump_image = pygame.transform.scale(dino_night_jump_image, (50, 50))
 dino_night_duck_image = pygame.image.load("angry_jumpingcat.png")
 dino_night_duck_image = pygame.transform.scale(pygame.image.load("angry_jumpingcat.png"), (50, 25))
 obstacle_image_dog = pygame.image.load("obstacle.png")
@@ -76,12 +76,10 @@ hawk_image = pygame.image.load("hawk.png")
 hawk_image = pygame.transform.scale(hawk_image, (50, 50))
 game_over_image = pygame.image.load("game_over.png")
 game_over_image = pygame.transform.scale(game_over_image, (WIDTH, HEIGHT))
-bg_day = pygame.image.load("mariobg.png")
-bg_night = pygame.image.load("nightmariobg.png")
-bg_forest_day = pygame.image.load("forest.jpg")
-bg_forest_night = pygame.image.load("forest_dark.jpg")
 bg_day = pygame.transform.scale(pygame.image.load("mariobg.png"), (WIDTH, HEIGHT))
 bg_night = pygame.transform.scale(pygame.image.load("nightmariobg.png"), (WIDTH, HEIGHT))
+bg_forest_day = pygame.transform.scale(pygame.image.load("forest.jpg"), (WIDTH, HEIGHT))
+bg_forest_night = pygame.transform.scale(pygame.image.load("forest_dark.jpg"), (WIDTH, HEIGHT))
 
 def load_score():
     if os.path.exists(SCORE_FILE):
@@ -235,13 +233,15 @@ while running:
 
         #Music
         if score in [150, 450, 750] and current_music == "day":
-            pygame.mixer.music.fadeout(2000)  
+            pygame.mixer.music.fadeout(2000)
+            pygame.time.delay(200)
             pygame.mixer.music.load("nightsound.mp3") 
             pygame.mixer.music.play(-1)  
             current_music = "night"
 
         if score in [300, 600, 900] and current_music == "night":
             pygame.mixer.music.fadeout(2000)
+            pygame.time.delay(200)
             pygame.mixer.music.load("daysound.mp3")
             pygame.mixer.music.play(-1)
             current_music = "day"
@@ -319,8 +319,8 @@ while running:
 
         # Collision Logic
         if not attacking and (dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or (dino_rect.colliderect(hawk_rect) and not duck)):
-            pygame.mixer.music.stop()
             gameover_sound.play()
+            pygame.mixer.music.stop()
             save_score(score)
             game_state = GAME_OVER 
 
