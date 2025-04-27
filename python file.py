@@ -3,6 +3,7 @@ import random
 import sys
 import os
 import json
+import threading
 
 # Initialize Pygame
 pygame.init()
@@ -50,6 +51,7 @@ gameover_sound = pygame.mixer.Sound("CatSadSound.wav")
 pygame.mixer.music.load("daysound.mp3")
 pygame.mixer.music.play(-1)
 current_music = "day"
+transitioning = False
 
 # Load images
 StartScreen = pygame.image.load("StartScreen.png")
@@ -116,12 +118,31 @@ def display_high_scores():
     scores = load_score()
     y_offset = 50
     for index, s in enumerate(scores):
-        score_text = font.render(f"{index + 1}. {s}", True, BLACK)
+        score_text = font.render(f"{index + 1}. {s}", True, WHITE)
         screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, y_offset))
         y_offset += 40
 
-    return_text = font.render("Press T to Return to Title", True, BLACK)
+    return_text = font.render("Press T to Return to Title", True, WHITE)
     screen.blit(return_text, (WIDTH // 2 - return_text.get_width() // 2, HEIGHT - 50))
+
+def fade_transition(screen, color, duration=500):
+    fade_surface = pygame.Surface(screen.get_size())
+    fade_surface.fill(color)
+    
+    def async_fade():
+        for alpha in range(0, 255, 5):  
+            fade_surface.set_alpha(alpha)
+            screen.blit(fade_surface, (0, 0))
+            pygame.display.update()
+            pygame.time.delay(30)
+
+    threading.Thread(target=async_fade).start()
+
+def change_music(new_track):
+    pygame.mixer.music.fadeout(2000)
+    threading.Thread(target=lambda: pygame.mixer.music.load(new_track)).start()
+    pygame.mixer.music.play(-1)
+
 
 # Game loop
 running = True
@@ -233,18 +254,13 @@ while running:
 
         #Music
         if score in [150, 450, 750] and current_music == "day":
-            pygame.mixer.music.fadeout(2000)
-            pygame.time.delay(200)
-            pygame.mixer.music.load("nightsound.mp3") 
-            pygame.mixer.music.play(-1)  
+            change_music("nightsound.mp3")
             current_music = "night"
 
         if score in [300, 600, 900] and current_music == "night":
-            pygame.mixer.music.fadeout(2000)
-            pygame.time.delay(200)
-            pygame.mixer.music.load("daysound.mp3")
-            pygame.mixer.music.play(-1)
+            change_music("daysound.mp3")
             current_music = "day"
+            
 
         # Update dino image based on score
         if 150 <= score < 300 or 450 <= score < 600 or 750 <= score < 900:  # Night conditions
@@ -269,7 +285,12 @@ while running:
             attack_timer -= 1
             if attack_timer <= 0:  #reset
                 attacking = False
-                current_dino = dino_night_image  # Restore default image
+                transitioning = True
+
+            if transitioning:
+                fade_transition(screen, BLACK)
+                current_dino = dino_night_image
+                transitioning = False
 
             if dino_rect.colliderect(obstacle_rect):
                 obstacle_x = WIDTH + 500
@@ -284,22 +305,21 @@ while running:
                 score += 100
                 hitsound.play()
                 
-
-        # Move ground and flying obstacles
-        obstacle_x -= obstacle_speed
-        if score >= 600:  # Shark spawning starts at score 600
-            obstacle_flying_x -= obstacle_flying_speed
+        if not transitioning:
+            obstacle_x -= obstacle_speed
+            if score >= 600:
+                obstacle_flying_x -= obstacle_flying_speed
+            if spawn_hawk:
+                hawk_x -= hawk_speed
+                
         if obstacle_x < -50:
             obstacle_x = WIDTH
         if obstacle_flying_x < -50:
             obstacle_flying_x = WIDTH
 
-        # Hawk logic
-        if spawn_hawk:
-            hawk_x -= hawk_speed
-            if hawk_x < -50:
-                hawk_x = WIDTH
-                spawn_hawk = False
+        if hawk_x < -50:
+            hawk_x = WIDTH
+            spawn_hawk = False
         if score >= 300 and not spawn_hawk and random.choice([True, False]):
             spawn_hawk = True
             hawk_x = WIDTH
