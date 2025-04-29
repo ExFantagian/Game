@@ -41,9 +41,10 @@ hawk_speed = 10
 score = 0
 spawn_hawk = False
 spawn_shark = False
-game_over = False
 HAWK_MIN_HEIGHT = HEIGHT - 125
 HAWK_MAX_HEIGHT = HEIGHT - 100
+SHARK_MIN_HEIGHT = HAWK_MIN_HEIGHT
+SHARK_MAX_HEIGHT = HAWK_MAX_HEIGHT
 SCORE_FILE = "scores.json"
 jumpsound = pygame.mixer.Sound("meow.wav")
 hitsound = pygame.mixer.Sound("angrycat_audio.mp3")
@@ -51,7 +52,7 @@ gameover_sound = pygame.mixer.Sound("CatSadSound.wav")
 pygame.mixer.music.load("daysound.mp3")
 pygame.mixer.music.play(-1)
 current_music = "day"
-transitioning = False
+
 
 # Load images
 StartScreen = pygame.image.load("StartScreen.png")
@@ -99,6 +100,7 @@ def save_score(new_score):
         json.dump(scores, file)
 
 def display_game_over_screen(score):
+    screen.fill(WHITE)
     screen.blit(game_over_image, (0, 0))
     font = pygame.font.Font(None, 36)
     score_text = font.render(f"Score: {score}", True, BLACK)
@@ -129,25 +131,42 @@ def fade_transition(screen, color, duration=500):
     fade_surface = pygame.Surface(screen.get_size())
     fade_surface.fill(color)
     
-    def async_fade():
-        for alpha in range(0, 255, 5):  
-            fade_surface.set_alpha(alpha)
-            screen.blit(fade_surface, (0, 0))
-            pygame.display.update()
-            pygame.time.delay(30)
-
-    threading.Thread(target=async_fade).start()
+    
+    for alpha in range(0, 255, 5):  
+        fade_surface.set_alpha(alpha)
+        screen.blit(fade_surface, (0, 0))
+        pygame.display.update()
+    pygame.time.set_timer(pygame.USEREVENT, 50)
 
 def change_music(new_track):
     pygame.mixer.music.fadeout(2000)
-    threading.Thread(target=lambda: pygame.mixer.music.load(new_track)).start()
-    pygame.mixer.music.play(-1)
 
+    def load_new_track():
+        pygame.mixer.music.load(new_track)
+        pygame.mixer.music.play(-1)
+
+    threading.Thread(target=load_new_track).start()
+"""
+def get_environment(score):
+    stage_length = get_stage_length(score)  # Dynamic stage duration
+
+    if score < stage_length:
+        return "day"
+    elif score < stage_length * 2:
+        return "night"
+    elif score < stage_length * 3:
+        return "forest_day"
+    elif score < stage_length * 4:
+        return "forest_night"
+    elif score < stage_length * 5:
+        return "beach_day"
+    else:
+        return "beach_night"
+"""
 
 # Game loop
 running = True
-while running:
-    screen.fill(WHITE)  
+while running:  
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -173,7 +192,7 @@ while running:
                     duck = True
                 elif event.key == pygame.K_k and (150 <= score < 300 or 450 <= score < 600 or 750 <= score < 900):
                     attacking = True
-                    attack_timer = 20
+                    attack_timer = 50
                     current_dino = dino_night_jump_image
             if event.type == pygame.KEYUP:
                 if event.key in [pygame.K_DOWN, pygame.K_s]:
@@ -196,10 +215,16 @@ while running:
                 hawk_x = WIDTH
                 spawn_hawk = False
                 spawn_shark = False
+                pygame.mixer.music.stop()  
+                pygame.mixer.music.load("daysound.mp3")  
+                pygame.mixer.music.play(-1) 
+                current_music = "day"
 
         elif game_state == HIGH_SCORES:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_t:
                 game_state = TITLE
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:  
+                game_state = PLAYING
 
     # Handle game states
     if game_state == TITLE:
@@ -210,6 +235,46 @@ while running:
 
 
     elif game_state == PLAYING:
+        screen.fill((135, 206, 250))  # Light blue sky
+        pygame.draw.rect(screen, (0, 105, 148), (0, HEIGHT // 2, WIDTH, HEIGHT // 2))  # Deep ocean
+        pygame.draw.arc(screen, (0, 50, 255), (0, HEIGHT // 2 - 20, WIDTH, HEIGHT // 4), 0, 3.14, 5)  # Wave effect
+        pygame.draw.rect(screen, (194, 178, 128), (0, HEIGHT - 50, WIDTH, 50))  # Base sand
+        pygame.draw.rect(screen, (222, 184, 135), (0, HEIGHT - 35, WIDTH, 15))  # Lighter top sand
+"""
+        current_environment = get_environment(score)
+        if current_environment == "day":
+            screen.blit(bg_day, (0, 0))
+        elif current_environment == "night":
+            screen.blit(bg_night, (0, 0))
+        elif current_environment == "forest_day":
+            screen.blit(bg_forest_day, (0, 0))
+        elif current_environment == "forest_night":
+            screen.blit(bg_forest_night, (0, 0))
+        elif current_environment == "beach_day":
+            screen.blit(bg_beach_day, (0, 0))
+        else:
+            screen.blit(bg_beach_night, (0, 0))
+
+        if current_environment in ["forest_day", "forest_night"]:
+            if not spawn_hawk and not spawn_shark:
+                if random.choice([True, False]):
+                    spawn_hawk = True
+                    hawk_x = WIDTH
+                    hawk_y = random.randint(HAWK_MIN_HEIGHT, HAWK_MAX_HEIGHT)
+                else:
+                    obstacle_x = WIDTH  # Ground obstacle appears instead
+
+        if current_environment in ["beach_day", "beach_night"]:
+            spawn_hawk = False
+            if not spawn_shark and not spawn_hawk:
+                if random.choice([True, False]):
+                    spawn_shark = True
+                    obstacle_flying_x = WIDTH
+                    obstacle_flying_y = random.randint(SHARK_MIN_HEIGHT, SHARK_MAX_HEIGHT)
+                else:
+                    obstacle_x = WIDTH
+"""
+
         if score < 150:
             screen.blit(bg_day, (0, 0))
         elif score < 300:
@@ -232,19 +297,14 @@ while running:
                     obstacle_x = WIDTH  # Spawn ground obstacle instead
 
         elif score >= 600:  # Beach area
+            spawn_hawk = False
             if not spawn_hawk and not spawn_shark:
-                if random.choice([True, False]):  # Mutually exclusive choice
+                if random.choice([True, False]):
                     spawn_shark = True
                     obstacle_flying_x = WIDTH
-                    obstacle_flying_y = HEIGHT - 200  # Adjust for water level
+                    obstacle_flying_y = random.randint(SHARK_MIN_HEIGHT, SHARK_MAX_HEIGHT)
                 else:
-                    obstacle_x = WIDTH  # Spawn ground obstacle instead
-
-        elif score < 750:  # Beach Day
-            screen.fill((200, 200, 200))  # Light gray sky
-            pygame.draw.rect(screen, (100, 100, 255), (0, HEIGHT // 2, WIDTH, HEIGHT // 2))  # Water
-            pygame.draw.rect(screen, WHITE, (0, HEIGHT - 50, WIDTH, 50))  # Sand
-
+                    obstacle_x = WIDTH
         elif score < 900:  # Beach Night
             screen.fill((50, 50, 50))  # Dark sky
             pygame.draw.rect(screen, (50, 50, 150), (0, HEIGHT // 2, WIDTH, HEIGHT // 2))  # Water
@@ -280,17 +340,26 @@ while running:
                 dino_y = HEIGHT - 100
                 jump = False
 
+        if attacking:
+            current_dino = dino_night_jump_image  # Attack mode should override ducking
+        elif duck:
+            dino_rect = pygame.Rect(dino_x, HEIGHT - 75, 50, 25)
+            current_dino = dino_night_duck_image if score >= 150 else dino_duck_image  
+        else:
+            dino_rect = pygame.Rect(dino_x, dino_y, 50, 50)
+            current_dino = dino_night_image if score >= 150 else dino_image
+
+
+
         
         if attacking:
             attack_timer -= 1
             if attack_timer <= 0:  #reset
                 attacking = False
-                transitioning = True
 
-            if transitioning:
                 fade_transition(screen, BLACK)
                 current_dino = dino_night_image
-                transitioning = False
+                pygame.time.set_timer(pygame.USEREVENT, 1000)
 
             if dino_rect.colliderect(obstacle_rect):
                 obstacle_x = WIDTH + 500
@@ -305,22 +374,22 @@ while running:
                 score += 100
                 hitsound.play()
                 
-        if not transitioning:
-            obstacle_x -= obstacle_speed
-            if score >= 600:
-                obstacle_flying_x -= obstacle_flying_speed
-            if spawn_hawk:
-                hawk_x -= hawk_speed
+        
+        obstacle_x -= obstacle_speed
+        if spawn_shark:
+            obstacle_flying_x -= obstacle_flying_speed
+        if spawn_hawk:
+            hawk_x -= hawk_speed
                 
         if obstacle_x < -50:
             obstacle_x = WIDTH
         if obstacle_flying_x < -50:
             obstacle_flying_x = WIDTH
-
+            spawn_shark = False
         if hawk_x < -50:
             hawk_x = WIDTH
             spawn_hawk = False
-        if score >= 300 and not spawn_hawk and random.choice([True, False]):
+        if score >= 300 and not spawn_hawk and not spawn_shark:
             spawn_hawk = True
             hawk_x = WIDTH
             hawk_y = random.randint(HAWK_MIN_HEIGHT, HAWK_MAX_HEIGHT)
@@ -330,13 +399,13 @@ while running:
         obstacle_rect = pygame.Rect(obstacle_x, HEIGHT - 100, 50, 50)
         obstacle_flying_rect = pygame.Rect(obstacle_flying_x, HEIGHT - 200, 50, 50)
         hawk_rect = pygame.Rect(hawk_x, hawk_y, 50, 50)
-
+"""
         # Debugging: Draw rectangles for visualization
         pygame.draw.rect(screen, (255, 0, 0), dino_rect, 2)  # Red for Dino
         pygame.draw.rect(screen, (0, 0, 255), obstacle_rect, 2)  # Blue for ground obstacle
         pygame.draw.rect(screen, (0, 255, 0), obstacle_flying_rect, 2)  # Green for flying obstacle
         pygame.draw.rect(screen, (255, 255, 0), hawk_rect, 2)  # Yellow for hawk
-
+"""
         # Collision Logic
         if not attacking and (dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or (dino_rect.colliderect(hawk_rect) and not duck)):
             gameover_sound.play()
