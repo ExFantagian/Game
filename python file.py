@@ -147,6 +147,23 @@ def change_music(new_track):
 
     threading.Thread(target=load_new_track).start()
 
+def get_environment(score):
+    stage_length = 500
+    looped_score = score % (stage_length * 6)  # Resets every 3000 points
+
+    if looped_score < stage_length:
+        return "day"
+    elif looped_score < stage_length * 2:
+        return "night"
+    elif looped_score < stage_length * 3:
+        return "forest_day"
+    elif looped_score < stage_length * 4:
+        return "forest_night"
+    elif looped_score < stage_length * 5:
+        return "beach_day"
+    else:
+        return "beach_night"
+
 # Game loop
 running = True
 while running:  
@@ -173,7 +190,7 @@ while running:
                     jumpsound.play()
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     duck = True
-                elif event.key == pygame.K_k and (300 <= score < 600 or 1000 <= score < 1400 or 1900 <= score < 2400):
+                elif event.key == pygame.K_k and (if score % 3000 >= 500 and score % 3000 < 1000 or score % 3000 >= 1500 and score % 3000 < 2000 or score % 3000 >= 2500 and score % 3000 < 3000):
                     attacking = True
                     attack_timer = 20
                     current_dino = dino_night_jump_image
@@ -218,30 +235,30 @@ while running:
 
 
     elif game_state == PLAYING:
-        if score < 300:
+        if score < 500:
             screen.blit(bg_day, (0, 0))
-        elif score < 600:
+        elif score < 1000:
             screen.blit(bg_night, (0, 0))
             # Display "Press K" prompt at night transition
-            if 300 <= score <= 600:
+            if 500 <= score <= 1000:
                 font = pygame.font.Font(None, 48)
                 press_k_text = font.render("Press K to attack!", True, (255, 0, 0))
                 screen.blit(press_k_text, (WIDTH // 2 - press_k_text.get_width() // 2, 50))
-        elif score < 1000:
+        elif score < 1500:
             screen.blit(bg_forest_day, (0, 0))
             if not spawn_hawk:
                 spawn_hawk = True
                 hawk_x = WIDTH
                 hawk_y = random.randint(HAWK_MIN_HEIGHT, HAWK_MAX_HEIGHT)
 
-        elif score < 1400:  # Forest Night
+        elif score < 2000:  # Forest Night
             screen.blit(bg_forest_night, (0, 0))
             if not spawn_hawk:
                 spawn_hawk = True
                 hawk_x = WIDTH
                 hawk_y = random.randint(HAWK_MIN_HEIGHT, HAWK_MAX_HEIGHT)
 
-        elif score < 1900:  # Beach area
+        elif score < 2500:  # Beach area
             screen.blit(bg_beach_day, (0, 0))
             spawn_hawk = False
             if not spawn_hawk and not spawn_shark:
@@ -249,7 +266,7 @@ while running:
                 obstacle_flying_x = WIDTH
                 obstacle_flying_y = hawk_y
 
-        elif score < 2400:  # Beach Night
+        elif score < 3000:  # Beach Night
             screen.blit(bg_beach_night, (0, 0))
             if not spawn_hawk and not spawn_shark:
                 spawn_shark = True
@@ -257,17 +274,17 @@ while running:
                 obstacle_flying_y = hawk_y
 
         #Music
-        if score in [300, 140, 2400] and current_music == "day":
+        if score % 3000 in [500, 1500, 2500] and current_music == "day":
             change_music("nightsound.mp3")
             current_music = "night"
 
-        if score in [600, 1400] and current_music == "night":
+        if score % 3000 in [1000, 2000] and current_music == "night":
             change_music("daysound.mp3")
             current_music = "day"
             
 
         # Update dino image based on score
-        if 300 <= score < 600 or 1000 <= score < 1400 or 1900 <= score < 2400:  # Night conditions
+        if score % 3000 >= 500 and score % 3000 < 1000 or score % 3000 >= 1500 and score % 3000 < 2000 or score % 3000 >= 2500 and score % 3000 < 3000:  # Night conditions
             if not attacking:
                 current_dino = dino_night_image
                 current_jump = dino_night_jump_image
