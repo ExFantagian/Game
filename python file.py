@@ -34,6 +34,7 @@ attacking = False
 obstacle_x = WIDTH
 obstacle_speed = 10
 obstacle_flying_x = WIDTH
+obstacle_flying_y = HEIGHT - 100
 obstacle_flying_speed = 10
 hawk_x = WIDTH
 hawk_y = HEIGHT - 125
@@ -43,6 +44,10 @@ spawn_hawk = False
 spawn_shark = False
 HAWK_MIN_HEIGHT = HEIGHT - 125
 HAWK_MAX_HEIGHT = HEIGHT - 100
+shark_direction = 1  #1 up, -1 down
+SHARK_MIN_HEIGHT = HEIGHT - 200  
+SHARK_MAX_HEIGHT = HEIGHT - 100
+shark_speed_vertical = 3
 SCORE_FILE = "scores.json"
 jumpsound = pygame.mixer.Sound("meow.wav")
 hitsound = pygame.mixer.Sound("angrycat_audio.mp3")
@@ -69,8 +74,8 @@ dino_night_duck_image = pygame.image.load("angry_jumpingcat.png")
 dino_night_duck_image = pygame.transform.scale(pygame.image.load("angry_jumpingcat.png"), (50, 25))
 obstacle_image_dog = pygame.image.load("obstacle.png")
 obstacle_image_dog = pygame.transform.scale(obstacle_image_dog, (50, 50))
-obstacle_image_Waterpuddle = pygame.image.load("Waterpuddle.png")
-obstacle_image_Waterpuddle = pygame.transform.scale(obstacle_image_Waterpuddle, (50, 50))
+obstacle_image_puddle = pygame.image.load("puddle.png")
+obstacle_image_puddle = pygame.transform.scale(obstacle_image_puddle, (50, 50))
 obstacle_image_shark = pygame.image.load("shark.png")
 obstacle_image_shark = pygame.transform.scale(obstacle_image_shark, (50, 50))
 hawk_image = pygame.image.load("hawk.png")
@@ -236,6 +241,13 @@ while running:
 
     elif game_state == PLAYING:
         current_environment = get_environment(score)
+        previous_environment = current_environment
+        if previous_environment != current_environment:  
+            if obstacle_x > -50:
+                pass
+            else:
+                obstacle_x = WIDTH + random.randint(300, 500) #Only reset if fully off-screen
+
 
         if current_environment == "day":
             screen.blit(bg_day, (0, 0))
@@ -258,7 +270,7 @@ while running:
             if not spawn_shark:
                 spawn_shark = True
                 obstacle_flying_x = WIDTH
-                obstacle_flying_y = random.randint(HAWK_MIN_HEIGHT, HAWK_MAX_HEIGHT)
+                obstacle_flying_y = random.randint(SHARK_MIN_HEIGHT, SHARK_MAX_HEIGHT)
                 obstacle_x = WIDTH + random.randint(200, 400)
             if dino_rect.colliderect(obstacle_rect):
                 print(f"Collision detected at Beach! Dog position: {obstacle_x}, Dino position: {dino_x}")
@@ -325,9 +337,12 @@ while running:
         obstacle_x -= obstacle_speed
         if spawn_shark:
             obstacle_flying_x -= obstacle_flying_speed
+            obstacle_flying_y += shark_speed_vertical * shark_direction
+            if obstacle_flying_y <= SHARK_MIN_HEIGHT or obstacle_flying_y >= SHARK_MAX_HEIGHT:
+                shark_direction *= -1
         if spawn_hawk:
             hawk_x -= hawk_speed
-                
+
         if obstacle_x < -50:
             print("Dog reset at:", obstacle_x)
             obstacle_x = WIDTH + random.randint(300, 500)
@@ -346,10 +361,10 @@ while running:
         hawk_rect = pygame.Rect(hawk_x, hawk_y, 50, 50)
 
         # Debugging: Draw rectangles for visualization
-        #pygame.draw.rect(screen, (255, 0, 0), dino_rect, 2)  # Red for Dino
-        #pygame.draw.rect(screen, (0, 0, 255), obstacle_rect, 2)  # Blue for ground obstacle
-        #pygame.draw.rect(screen, (0, 255, 0), obstacle_flying_rect, 2)  # Green for flying obstacle
-        #pygame.draw.rect(screen, (255, 255, 0), hawk_rect, 2)  # Yellow for hawk
+        pygame.draw.rect(screen, (255, 0, 0), dino_rect, 2)
+        #pygame.draw.rect(screen, (0, 0, 255), obstacle_rect, 2)
+        pygame.draw.rect(screen, (0, 255, 0), obstacle_flying_rect, 2)
+        #pygame.draw.rect(screen, (255, 255, 0), hawk_rect, 2)
 
         # Collision Logic
         if not attacking and (dino_rect.colliderect(obstacle_rect) or dino_rect.colliderect(obstacle_flying_rect) or (dino_rect.colliderect(hawk_rect) and not duck)):
