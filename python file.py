@@ -241,13 +241,13 @@ while running:
 
     elif game_state == PLAYING:
         current_environment = get_environment(score)
-        previous_environment = current_environment
+        
         if previous_environment != current_environment:  
             if obstacle_x > -50:
                 pass
             else:
                 obstacle_x = WIDTH + random.randint(300, 500) #Only reset if fully off-screen
-
+        previous_environment = current_environment
 
         if current_environment == "day":
             screen.blit(bg_day, (0, 0))
@@ -279,7 +279,7 @@ while running:
                 spawn_hawk = True
                 hawk_x = WIDTH
                 hawk_y = random.randint(HAWK_MIN_HEIGHT, HAWK_MAX_HEIGHT)
-                obstacle_x = WIDTH + random.randint(200, 400)
+                obstacle_x = hawk_x + random.randint(150, 400)
 
         #Music
         new_music = "daysound.mp3" if current_environment.endswith("day") else "nightsound.mp3"
@@ -344,7 +344,6 @@ while running:
             hawk_x -= hawk_speed
 
         if obstacle_x < -50:
-            print("Dog reset at:", obstacle_x)
             obstacle_x = WIDTH + random.randint(300, 500)
         if obstacle_flying_x < -50:
             obstacle_flying_x = WIDTH
