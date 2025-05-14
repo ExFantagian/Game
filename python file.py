@@ -39,7 +39,7 @@ obstacle_flying_speed = 10
 hawk_x = WIDTH
 hawk_y = HEIGHT - 125
 hawk_speed = 10
-score = 0
+score = 2900
 spawn_hawk = False
 spawn_shark = False
 HAWK_MIN_HEIGHT = HEIGHT - 150
@@ -55,6 +55,9 @@ gameover_sound = pygame.mixer.Sound("CatSadSound.wav")
 pygame.mixer.music.load("daysound.mp3")
 pygame.mixer.music.play(-1)
 current_music = "day"
+CUTSCENE = "CUTSCENE"
+scene_index = 0
+first_loop_done = False
 
 
 # Load images
@@ -88,6 +91,21 @@ bg_forest_day = pygame.transform.scale(pygame.image.load("forest.jpg"), (WIDTH, 
 bg_forest_night = pygame.transform.scale(pygame.image.load("forest_dark.jpg"), (WIDTH, HEIGHT))
 bg_beach_day = pygame.transform.scale(pygame.image.load("bg_beach_day.png"), (WIDTH, HEIGHT))
 bg_beach_night = pygame.transform.scale(pygame.image.load("bg_beach_night.png"), (WIDTH, HEIGHT))
+
+cutscene_text = [
+    ("There you are", (255, 0, 0)),  # Scene 1 - Black screen with red text
+    ("", (255, 255, 255)),  # Scene 2 - Image only, no text
+    ("Where have you been?", (255, 255, 255)),  # Scene 3 - Image + text
+    ("There have been strange animal disappearances, especially dogs. Be careful of those puddles they leave behind", (255, 255, 255)),  # Scene 4 - Image + text
+    ("But you can probably tell that, right?", (255, 255, 255))  # Scene 5 - Image + text
+]
+cutscene_images = [
+    None,  # Scene 1 (Black screen only)
+    "scene1.png",  # Scene 2
+    "scene2.png",  # Scene 3
+    "scene3.png",  # Scene 4 (Text + image)
+    "scene4.png"  # Scene 5 (Text + image)
+]
 
 def load_score():
     if os.path.exists(SCORE_FILE):
@@ -171,6 +189,32 @@ def get_environment(score):
 
 previous_environment = get_environment(score)
 
+def blit_text_centered(screen, text, color, y_position):
+    font = pygame.font.Font(None, 36)  # Adjust font size if needed
+    max_width = WIDTH - 40  # Allow space for padding
+    
+    # Handle word wrapping
+    words = text.split(' ')
+    lines = []
+    current_line = ""
+
+    for word in words:
+        test_surface = font.render(current_line + word, True, color)
+        if test_surface.get_width() > max_width:  # If line is too wide, start a new one
+            lines.append(current_line)
+            current_line = word + " "
+        else:
+            current_line += word + " "
+    
+    lines.append(current_line)  # Add last line
+    
+    # Blit each line properly centered
+    line_height = font.get_height()
+    for i, line in enumerate(lines):
+        text_surface = font.render(line, True, color)
+        x_position = WIDTH // 2 - text_surface.get_width() // 2
+        screen.blit(text_surface, (x_position, y_position + i * line_height))
+
 # Game loop
 running = True
 while running:  
@@ -232,23 +276,34 @@ while running:
                 game_state = TITLE
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:  
                 game_state = PLAYING
+        elif game_state == CUTSCENE:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:  # Press space to continue
+                scene_index += 1  # Move to the next scene
+                if scene_index < len(cutscene_text):
+                    text_content, color = cutscene_text[scene_index]
+                    blit_text_centered(screen, text_content, color, HEIGHT - 100)
+         
 
     # Handle game states
     if game_state == TITLE:
         display_title_screen()
     elif game_state == HIGH_SCORES:
         screen.fill(WHITE)  
-        display_high_scores()  
-
-
+        display_high_scores()
+    elif game_state == CUTSCENE:
+        screen.fill((0, 0, 0))
+            
     elif game_state == PLAYING:
         current_environment = get_environment(score)
-
+        if not first_loop_done and current_environment == "day":
+            first_loop_done = True
+            game_state = CUTSCENE
         if previous_environment != current_environment:  
             if obstacle_x > -50:
                 obstacle_x -= obstacle_speed
             else:
                 obstacle_x = WIDTH + random.randint(300, 500)
+
         previous_environment = current_environment
         
         if current_environment == "day":
@@ -405,6 +460,18 @@ while running:
     elif game_state == GAME_OVER:
         display_game_over_screen(score)
 
+    if cutscene_images[scene_index]:
+            image = pygame.image.load(cutscene_images[scene_index])
+            screen.blit(image, (WIDTH // 2 - image.get_width() // 2, HEIGHT // 2 - image.get_height() // 2))
+        
+    if cutscene_text[scene_index]:
+            text_content, color = cutscene_text[scene_index]
+            font = pygame.font.Font(None, 48)
+            text_surface = font.render(text_content, True, color)
+            y_position = HEIGHT // 2 - text_surface.get_height() // 2
+            screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, y_position))
+
+            
     pygame.display.flip()
     clock.tick(30)
 
